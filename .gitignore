@@ -1,0 +1,9 @@
+node_modules/
+dist/
+dist-electron/
+*.log
+.env
+.env.local
+.DS_Store
+*.pem
+out/
