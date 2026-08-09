@@ -38,8 +38,31 @@ body,
   cursor: default;
 }
 
-.pet-root.dragging {
+/* Arrastrar a la MASCOTA la mueve por el escritorio (compositor Wayland/X11).
+   El resto del overlay (menú, burbujas, dock, name-badge...) sigue clicable. */
+.creature-zone {
+  -webkit-app-region: drag;
+  cursor: grab;
+}
+.creature-zone:active {
   cursor: grabbing;
+}
+
+/* Todo lo interactivo queda clicable (no arrastra la ventana) */
+.pet-root .action-tray,
+.pet-root .toolbar,
+.pet-root .needs-dock,
+.pet-root .bubble,
+.pet-root .chat-box,
+.pet-root .name-badge,
+.pet-root .event-banner,
+.pet-root .dead-overlay,
+.pet-root .menu,
+.pet-root button,
+.pet-root input,
+.pet-root .particles {
+  -webkit-app-region: no-drag;
+  cursor: auto;
 }
 
 /* ── burbuja de diálogo ── */

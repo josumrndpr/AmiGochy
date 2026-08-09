@@ -7,7 +7,7 @@ import { sound, soundForAction } from '../../pet/src/sound';
 
 declare global {
   interface Window {
-    ami: AmiAPI & { drag: { move: (x: number, y: number) => void; end: () => void } };
+    ami: AmiAPI & { drag: { begin: () => void; move: (x: number, y: number) => void; end: () => void } };
   }
 }
 
@@ -341,6 +341,12 @@ export function App() {
                 checked={cfg.overlay.clickThrough}
                 onChange={(v) => void ami.windows.setClickThrough(v).then((r) => patch({ overlay: { ...cfg.overlay, clickThrough: r } }))}
               />
+              {cfg.overlay.clickThrough && (
+                <p className="ghost-hint">
+                  👻 Activo: para salir pulsa <b>Ctrl+Shift+Alt+O</b> (atajo global) o vuelve a lanzar AmiGochy — se desactiva
+                  solo.
+                </p>
+              )}
               <div className="btn-row">
                 <button
                   className="btn"

@@ -45,6 +45,7 @@ const api: AmiAPI = {
 contextBridge.exposeInMainWorld('ami', {
   ...api,
   drag: {
+    begin: () => ipcRenderer.send('pet:drag-begin'),
     move: (x: number, y: number) => ipcRenderer.send('pet:drag-move', x, y),
     end: () => ipcRenderer.send('pet:drag-end'),
   },

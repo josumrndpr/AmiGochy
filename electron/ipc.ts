@@ -1,8 +1,52 @@
 import { ipcMain, BrowserWindow, app } from 'electron';
+import { spawn, spawnSync } from 'node:child_process';
 import type { ActionType } from '../shared/types';
 import { getConfig, setConfig } from './store';
 import { PetEngine } from './petEngine';
 import { createSettingsWindow, petWindow, savePetPosition, createPetWindow, togglePetWindow } from './windows';
+
+// En Wayland el programa no puede mover su propia ventana (setPosition es no-op).
+// En Hyprland se mueve con `hyprctl dispatch movewindowpixel`; en X11, con setPosition.
+let hyprAddress: string | null | undefined; // undefined = aún sin probar, null = no aplica
+const hypr = (cmd: string[]) => {
+  try {
+    spawn('hyprctl', cmd, { stdio: 'ignore' });
+  } catch {
+    /* no op */
+  }
+};
+
+function findHyprAddress(): string | null {
+  try {
+    const out = spawnSync('hyprctl', ['clients', '-j'], { encoding: 'utf8', timeout: 2000 });
+    if (out.status !== 0 || !out.stdout) return null;
+    const clients = JSON.parse(out.stdout) as Array<{ address: string; title: string; class: string }>;
+    const pet = clients.find((c) => c.title === 'AmiGochy');
+    return pet?.address ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function movePetWindow(x: number, y: number): void {
+  const w = petWindow;
+  if (!w || w.isDestroyed()) return;
+  const roundedX = Math.round(x);
+  const roundedY = Math.round(y);
+
+  // 1· intento: Hyprland (Wayland) — el compositor mueve la ventana
+  if (process.platform === 'linux' && process.env.WAYLAND_DISPLAY && hyprAddress !== null) {
+    if (hyprAddress === undefined) {
+      hyprAddress = findHyprAddress();
+      if (!hyprAddress) return; // sin ventana pet visible aún
+    }
+    hypr(['dispatch', `movewindowpixel exact ${roundedX} ${roundedY},address:${hyprAddress}`]);
+    return;
+  }
+
+  // 2· intento: X11 / resto
+  w.setPosition(roundedX, roundedY);
+}
 
 export function registerIpc(engine: PetEngine): void {
   // ── config ──
@@ -58,14 +102,12 @@ export function registerIpc(engine: PetEngine): void {
   ipcMain.handle('win:quit', () => app.quit());
   ipcMain.handle('win:platform', () => process.platform);
 
-  // ── arrastre de la mascota (funciona también en Wayland) ──
+  // ── arrastre de la mascota (Hyprland vía hyprctl, X11 vía setPosition) ──
   ipcMain.on('pet:drag-begin', () => {
-    /* el renderer manda deltas absolutos */
+    hyprAddress = undefined; // busca la ventana de nuevo al empezar el arrastre
   });
   ipcMain.on('pet:drag-move', (_e, x: number, y: number) => {
-    const w = petWindow;
-    if (!w || w.isDestroyed()) return;
-    w.setPosition(Math.round(x), Math.round(y));
+    movePetWindow(x, y);
   });
   ipcMain.on('pet:drag-end', () => savePetPosition());
   void togglePetWindow;
@@ -83,3 +125,5 @@ function broadcast(channel: string, payload: unknown): void {
     if (!win.isDestroyed()) win.webContents.send(channel, payload);
   }
 }
+
+export { broadcast };

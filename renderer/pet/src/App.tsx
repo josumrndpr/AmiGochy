@@ -9,7 +9,7 @@ import { sound, soundForAction } from './sound';
 
 declare global {
   interface Window {
-    ami: AmiAPI & { drag: { move: (x: number, y: number) => void; end: () => void } };
+    ami: AmiAPI & { drag: { begin: () => void; move: (x: number, y: number) => void; end: () => void } };
   }
 }
 
@@ -69,10 +69,8 @@ export function App() {
   const [thinking, setThinking] = useState(false);
   const [particles, setParticles] = useState<Particle[]>([]);
   const [eye, setEye] = useState({ x: 0, y: 0 });
-  const [dragging, setDragging] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [flash, setFlash] = useState<{ text: string; emoji: string } | null>(null);
-  const dragRef = useRef<{ sx: number; sy: number; wx: number; wy: number; moved: boolean } | null>(null);
   const prevRef = useRef<Partial<PetState>>({});
   const flashTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -143,32 +141,9 @@ export function App() {
     return () => window.removeEventListener('pointermove', onWindowMove);
   }, [onWindowMove]);
 
-  // ── arrastre de la ventana (funciona con Wayland) ──
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    sound.resume();
-    dragRef.current = { sx: e.screenX, sy: e.screenY, wx: window.screenX, wy: window.screenY, moved: false };
-  }, []);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const d = dragRef.current;
-    if (!d) return;
-    const dx = e.screenX - d.sx;
-    const dy = e.screenY - d.sy;
-    if (!d.moved && Math.hypot(dx, dy) < 5) return;
-    if (!d.moved) {
-      d.moved = true;
-      setDragging(true);
-    }
-    ami.drag.move(d.wx + dx, d.wy + dy);
-  }, []);
-
-  const onPointerUp = useCallback(() => {
-    const d = dragRef.current;
-    dragRef.current = null;
-    if (d?.moved) {
-      setDragging(false);
-      ami.drag.end();
-    }
+  // ── arrastre: lo gestiona el compositor (CSS -webkit-app-region: drag en .creature-zone) ──
+  const onRootPointerDown = useCallback(() => {
+    sound.resume(); // desbloquea audio tras el primer contacto
   }, []);
 
   // ── acciones ──
@@ -223,7 +198,7 @@ export function App() {
 
   return (
     <div
-      className={`pet-root${dragging ? ' dragging' : ''}${lowNeeds ? ' needs-low' : ''}${chatOpen ? ' chat-open' : ''}${
+      className={`pet-root${lowNeeds ? ' needs-low' : ''}${chatOpen ? ' chat-open' : ''}${
         cfg.overlay.clickThrough ? ' ghost' : ''
       }`}
       style={
@@ -233,10 +208,7 @@ export function App() {
           opacity: cfg.overlay.opacity,
         } as React.CSSProperties
       }
-      onPointerDown={onPointerDown}
-      onPointerMove={onPointerMove}
-      onPointerUp={onPointerUp}
-      onPointerLeave={onPointerUp}
+      onPointerDown={onRootPointerDown}
       onContextMenu={(e) => {
         e.preventDefault();
         setMenuOpen((v) => !v);

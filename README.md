@@ -14,6 +14,15 @@ Escrito en **TypeScript + React + Electron** (proceso principal en CommonJS, ren
 - 🔊 **Sonido sintetizado** con WebAudio — sin archivos de audio.
 - ⚙️ **Configuración completa**: nombre, personalidad, color, tamaño, opacidad, click-through, IA…
 
+## 🕹️ Cómo se usa
+
+- **Arrastra a la mascota** (por su cuerpo) para moverla por el escritorio — funciona en Wayland y X11.
+- **Clic derecho** (fuera de la mascota) → menú: Dormir, Pausa, Ocultar, Ajustes.
+- **Pasa el ratón** por el overlay → dock de necesidades y barra de acciones (comer, beber, jugar, aseo, abrazo).
+- **Clic en la burbuja** → chatear con ella (IA con personalidad, o frases hechas sin clave).
+- **Modo fantasma**: los clics la atraviesan. Para salir: `Ctrl+Shift+Alt+O` (si el escritorio soporta atajos globales), o **vuelve a lanzar AmiGochy** — al arrancar siempre se desactiva solo.
+- **Salir**: menú de la mascota → Ajustes → "Salir de AmiGochy".
+
 ## 🚀 Empezar
 
 ```bash
